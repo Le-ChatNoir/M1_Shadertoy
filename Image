@@ -1,0 +1,68 @@
+// Number of balls.
+// Link to the simulation: https://www.shadertoy.com/view/3sjcRV
+#define BALLS 100
+
+// Radius of balls.
+#define R 0.01
+
+//Health states
+#define HEALTHY 0.0
+#define INFECTED 1.0
+#define RECOVERED 3.0
+#define DEAD 4.0
+
+// This function returns where in iChannel0, the position of ball "v" is.
+vec2 BallVarPos(int v) {
+  float vf = float(v);
+  vec2 xy = vec2(mod(vf, iChannelResolution[0].x),
+                 floor(vf / iChannelResolution[0].x));
+  xy += vec2(0.5);
+  xy /= iChannelResolution[0].xy;
+  return xy;
+}
+
+void mainImage( out vec4 fragColor, in vec2 fragCoord )
+{
+	vec2 uv = fragCoord.xy / iResolution.x;
+    
+    fragColor = vec4(0,0,0,1);
+
+    // Iterate through all the balls, if this pixel is inside one of them,
+    // then assign the output pixel to that color.
+    for (int i = 0; i < BALLS; i++) {
+        vec2 pos = texture(iChannel0, BallVarPos(i)).xy;
+        float state = texture(iChannel0, BallVarPos(i)).z;
+        float dist = length(uv - pos);
+        if (dist < R) {
+            vec3 rgb = vec3(mod(float(i) / 3.0, 1.0),
+                            mod(float(i) / 5.0, 1.0),
+                            mod(float(i) / 7.0, 1.0));
+            // Calculate normal vector for the ball.
+            vec3 norm = normalize(vec3((uv-pos).xy, - sqrt(R * R - dist * dist)));
+            // Incoming light.
+            vec3 sunray = normalize(vec3(-1.0,1.0,-1.0));
+            // Color
+            if(state == HEALTHY){
+                rgb = vec3(0.0,
+                           255.0,
+                           0.0);
+            }
+            if(state == INFECTED){
+                rgb = vec3(255.0,
+                           0.0,
+                           0.0);
+            }
+            if(state == RECOVERED){
+                rgb = vec3(0.0,
+                           0.0,
+                           255.0);
+            }
+            if(state == DEAD){
+                rgb = vec3(64.0,
+                           64.0,
+                           64.0);
+            }
+            fragColor.xyz = rgb * (1.0 + dot(norm, sunray));
+        }
+    }
+}
